@@ -1,7 +1,10 @@
 import SwiftUI
+import LaTeXSwiftUI
+import MathJaxSwift
+import SVGView
 
 extension Sequence where Element == InlineNode {
-  func renderText(
+    @MainActor func renderText(
     baseURL: URL?,
     textStyles: InlineTextStyles,
     images: [String: Image],
@@ -44,13 +47,13 @@ private struct TextInlineRenderer {
     self.attributes = attributes
   }
 
-  mutating func render<S: Sequence>(_ inlines: S) where S.Element == InlineNode {
+    @MainActor mutating func render<S: Sequence>(_ inlines: S) where S.Element == InlineNode {
     for inline in inlines {
       self.render(inline)
     }
   }
 
-  private mutating func render(_ inline: InlineNode) {
+    @MainActor private mutating func render(_ inline: InlineNode) {
     switch inline {
     case .text(let content):
       self.renderText(content)
@@ -65,7 +68,7 @@ private struct TextInlineRenderer {
     }
   }
 
-  private mutating func renderText(_ text: String) {
+    @MainActor private mutating func renderText(_ text: String) {
     var text = text
 
     if self.shouldSkipNextWhitespace {
@@ -73,7 +76,31 @@ private struct TextInlineRenderer {
       text = text.replacingOccurrences(of: "^\\s+", with: "", options: .regularExpression)
     }
 
-    self.defaultRender(.text(text))
+    let laTeXMatches = findLaTeXRanges(in: text).reversed()
+    var index = 0
+    for match in laTeXMatches {
+        let range = match.range
+        let nsRange1 = NSRange(location: index, length: range.location - index)
+        let txt = (text as NSString).substring(with: nsRange1)
+        index = range.upperBound
+        self.defaultRender(.text(txt))
+
+        let nsRange = NSRange(location: range.location, length: range.length)
+        let laTeXExpression = (text as NSString).substring(with: nsRange)
+      
+                // Extract the LaTeX code without delimiters
+        let laTeXCode = laTeXExpression
+                    .replacingOccurrences(of: "\\(", with: "")
+                    .replacingOccurrences(of: "\\)", with: "")
+                    .replacingOccurrences(of: "$$", with: "")
+      
+        if let image = renderLaTeX(laTeXCode) {
+            self.result = self.result + Text(Image(nsImage: image))
+        }
+    }
+    let nsRange1 = NSRange(location: index, length: text.count - index)
+    let txt = (text as NSString).substring(with: nsRange1)
+    self.defaultRender(.text(txt))
   }
 
   private mutating func renderSoftBreak() {

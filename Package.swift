@@ -1,11 +1,11 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.10
 
 import PackageDescription
 
 let package = Package(
   name: "swift-markdown-ui",
   platforms: [
-    .macOS(.v12),
+    .macOS(.v13),
     .iOS(.v15),
     .tvOS(.v15),
     .macCatalyst(.v15),
@@ -19,6 +19,8 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/gonzalezreal/NetworkImage", from: "6.0.0"),
+    .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.4.0"),
+    .package(url: "https://github.com/colinc86/LaTeXSwiftUI", from: "1.3.2"),
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.10.0"),
   ],
   targets: [
@@ -27,6 +29,8 @@ let package = Package(
       name: "MarkdownUI",
       dependencies: [
         "cmark-gfm",
+        .product(name: "SwiftMath", package: "SwiftMath"),
+        .product(name: "LaTeXSwiftUI", package: "LaTeXSwiftUI"),
         .product(name: "NetworkImage", package: "NetworkImage"),
       ]
     ),
